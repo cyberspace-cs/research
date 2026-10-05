@@ -276,6 +276,72 @@ DESIGNER 提出由 **"设计逻辑"（Design Logic）** 引导的全新范式。
    - 用 Jev 做它的决策引擎（判断"这一步该做什么"）
 
 ---
+### 7. AutoDataBench — 让 Agent 自动写数据（RSI 关键环节）
+
+| 项目 | 内容 |
+|------|------|
+| **论文** | arXiv 2609.35025 |
+| **仓库** | https://github.com/StarDewXXX/AutoDataBench |
+| **你的 Fork** | https://github.com/cyberspace-cs/AutoDataBench |
+| **Stars** | 23 ⭐（新开源） |
+| **方向** | Agent 自动合成训练数据 |
+
+#### 核心问题
+
+数据对 LLM 来说是最重要的，这也是 **RSI（递归自我改进）的关键环节**。
+
+现在造数据还是 human-in-the-loop 的过程——研究员、领域专家、coding agent 一起写。但 Agent 越来越强了，能不能让 Agent 针对某个 benchmark 自主完成数据生产？
+
+#### 技术思路
+
+`
+┌─────────────────────┐     ┌─────────────────────┐
+│  (a) 现在：人类主导   │     │  (b) AutoDataBench  │
+│     human in loop    │     │    fully autonomous │
+├─────────────────────┤     ├─────────────────────┤
+│  Benchmark (固定)    │────→│  Benchmark (同一个)  │
+│         ↓            │     │         ↓            │
+│  谁写数据？          │     │  谁写数据？          │
+│  · 研究员            │     │  · 自主 Agent        │
+│  · 领域专家          │     │  · 目标模型 API      │
+│  · coding agent      │     │  · web               │
+│         ↓            │     │         ↓            │
+│  质检（pass rate、   │     │  同样的质检          │
+│  rubric）            │     │  + 给 Agent 打分     │
+│         ↓            │     │         ↓            │
+│  新题目（人工格式）   │     │  新题目（suite 格式） │
+└─────────────────────┘     └─────────────────────┘
+`
+
+#### 选用的 Benchmark
+
+| Benchmark | 领域 |
+|-----------|------|
+| Terminal Bench | Coding |
+| Terminal Bench Science | Science |
+| AutomationBench | Automation |
+
+#### 核心创新
+
+1. **全自动化数据生产**：从 human-in-the-loop 变成 fully autonomous
+2. **质检标准复用**：用业内常用的 pass rate 和 rubric 作为合成数据的衡量标准
+3. **最基础 setting**：针对一个目标模型 + 一道题目，合成一道新题
+
+#### 为什么重要？
+
+这是 RSI 的闭环关键：
+`
+Agent 变强 → 自动写数据 → 训练更强的 Agent → 再写更好的数据 → ...
+`
+
+没有自动数据生产，RSI 就卡在"需要人工造数据"这一步。
+
+#### 对我们的启发
+
+- 我们的对话副驾也可以自动生成训练数据：用户对话 → Agent 分析好坏 → 自动生成新的对话样本
+- Skill2Env + AutoDataBench = 完整的 RSI 数据飞轮
+
+---
 ## 🎯 我们可以怎么做？
 
 ### 短期（1-2 周）
