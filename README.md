@@ -342,6 +342,73 @@ Agent 变强 → 自动写数据 → 训练更强的 Agent → 再写更好的�
 - Skill2Env + AutoDataBench = 完整的 RSI 数据飞轮
 
 ---
+### 8. Harness Engineering — 11 个生产级 Coding Agent 的源码解剖
+
+| 项目 | 内容 |
+|------|------|
+| **论文** | arXiv 2609.00006 |
+| **标题** | Harness Engineering: Anatomy, Architecture, and Evolution of Coding Agents |
+| **作者** | Paul Barbaste 等（Inclusive Brains, Wavestone AI Lab） |
+| **时间** | 2026 年 7 月 |
+| **分析对象** | 11 个生产级 coding harness + 1 个 meta-harness |
+
+#### 核心定义
+
+> **Agent = Model + Harness**
+>
+> Harness 是模型之外的全部：循环、工具、上下文管理、安全控制、编排、扩展面。
+
+Harness Engineering 就是设计和演化这个 runtime 的学科。
+
+#### 分析的 11 个系统
+
+| 类别 | 系统 |
+|------|------|
+| **大厂官方** | Claude Code (Anthropic), Codex CLI (OpenAI), Gemini CLI (Google), Mistral Vibe (Mistral) |
+| **开源社区** | OpenHands, Aider, Mini-SWE-Agent, Hermes (Nous Research), Pi, OpenCode, OpenClaw |
+| **Meta-Harness** | Omnigent (Databricks) — 第一个能跑多个 harness 的元 harness |
+
+#### 七大核心子系统
+
+论文把 harness 拆成 7 个 canonical subsystems：
+1. **Loop engine** — think/act/observe 循环
+2. **Context management** — 上下文压缩、管理
+3. **Tools** — 工具集
+4. **Permissions & safety** — 权限控制
+5. **Memory** — 持久化记忆
+6. **Orchestration** — 多 agent 编排
+7. **Extension surfaces** — 扩展机制（skills、plugins、hooks）
+
+#### 关键发现（13 个观察 + 29 个设计模式）
+
+| 发现 | 说明 |
+|------|------|
+| **不用通用框架** | 没有一个 agent runtime import LangChain/LangGraph/AutoGen |
+| **Google 不用自己的框架** | Gemini CLI 既不用 Google 自己的 agent 框架，也不用 vector embeddings |
+| **全是手写异步循环** | 没有用通用 agent 框架，全是 hand-rolled async loops |
+| **代码检索不用向量** | 全是 ripgrep、tree-sitter、glob、Markdown context files |
+| **SKILL.md > MCP** | SKILL.md skills 比 MCP 更普及（9/11 vs 8/11） |
+| **趋同现象** | Codex 学 Claude Code 的 hook vocabulary，OpenHands 学 Claude Code 的 plugin 格式 |
+| **Meta-harness 出现** | OpenHands 能跑 Claude Code/Codex/Gemini CLI 作为可互换后端 |
+| **从工具变平台** | 2026 上半年，harness 从工具变成了可 import 的 SDK / platform |
+
+#### 最小可行 Harness（90 行代码）
+
+论文最后给了一个 ~90 行的 minimum-viable-harness scaffold：
+- 核心：线性的 	ool_call → execute → observe 循环
+- 阈值式压缩
+- 扁平权限门
+- 单个扩展 hook
+
+#### 对我们的启发
+
+1. **Harness 比模型更重要**：Stanford 研究发现，orchestration code 带来的性能差异比模型选择还大
+2. **不要用大框架**：生产级 harness 全是手写的，不要 import LangChain
+3. **代码检索用 ripgrep 就够了**：不用 vector embeddings
+4. **SKILL.md 是事实标准**：比 MCP 更普及
+5. **我们的 DIY harness 应该学这个架构**：7 个子系统，90 行最小骨架
+
+---
 ## 🎯 我们可以怎么做？
 
 ### 短期（1-2 周）
