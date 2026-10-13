@@ -238,3 +238,84 @@ npx -y rea-agents@latest analyze-javascript-application /path/to/app --json
 - 36氪报道：https://m.36kr.com/p/4022639150289033
 - 腾讯云分析：https://cloud.tencent.com.cn/developer/article/2759769
 - OSCHINA：https://www.oschina.net/news/502941
+
+---
+
+## 10. 实战演示记录（2026-10-13 实测）
+
+> 以下全部为**本机真实运行** `npx rea-agents@latest` 的结果。
+
+### 演示 1：逆向一个 Electron 笔记应用（demo-notes-app）
+
+构造了一个模拟 Electron 应用（main.js + preload + 渲染进程 + better-sqlite3），REA 一条命令完整重建架构：
+
+```bash
+npx rea-agents@latest analyze-javascript-application demo-notes-app --json
+```
+
+**REA 输出摘要**：
+
+| 维度 | 值 |
+|------|-----|
+| BrowserWindow | 1 |
+| preload 入口 | 1 |
+| contextBridge API | `notesAPI`（list / create / delete）|
+| IPC 通道 | 3：`notes:list`、`notes:create`、`notes:delete` |
+| 主进程 handlers | 3（全部配对）|
+| 渲染进程传输 | 3（与 handler 一一对应）|
+| 外部依赖 | `electron`、`path`、`better-sqlite3` |
+| 解析 | 5 文件 · 331 AST 节点 · 22 findings · 0 失败 |
+
+**证据链示例**：每个 IPC handler 都带精确位置引用，如 `main:handle:notes:create:21:31-24:1`；同时标注 7 条 limitations（"静态分析未证明运行时执行"）。
+
+### 演示 2：豆包 Web 端公开资源分析
+
+> 合规说明：仅分析**浏览器公开加载的页面/JS 资源**（任何用户访问网页时浏览器都会获取的内容），属于常规网页技术观察，不涉及破解客户端二进制或绕过授权。
+
+**第一步：抓取首页公开 HTML**
+
+```bash
+curl -A "Mozilla/5.0 ... Chrome/125.0" https://www.doubao.com/
+```
+
+发现：
+- 静态资源托管于 `lf-flow-web-cdn.doubao.com`（字节 CDN）
+- 3 个外部 JS：`lib-polyfill`、`51.chunk`、`chat`（主包 1.7MB）
+- 11 个内联脚本块
+
+**第二步：分析公开 JS 特征**
+
+| 文件 | 大小 | 关键特征 |
+|------|------|---------|
+| chat.d90c4a86dd.js | 1.7 MB | `conversation`×567、`ark`×290、`SSE`×30（流式）、`bytedance` |
+| 51.d0891abea5.js | 935 KB | `react`×104（前端框架）、`ark`×11、`session_id` |
+| lib-polyfill | 161 KB | polyfill + SSE |
+
+结论（公开层面）：**豆包 Web = React 前端 + 火山方舟(ark)平台 + SSE 流式会话体系**。
+
+**第三步：用 REA 分析公开 JS bundle**
+
+```bash
+npx rea-agents@latest analyze-javascript-application doubao-web --json
+```
+
+REA 输出（2.8MB 源码 → 图结构）：
+
+| 指标 | 值 |
+|------|-----|
+| AST 节点 | 870,711 |
+| findings | 186 · 解析失败 0 |
+| 应用图 | 109 节点 / 193 边 |
+| 端点节点 | **77** |
+| 存储节点 | **22** |
+| 关系 | calls×98 · persists_to×51 · exposes×35 |
+| 未知项 | 36（显式标注）|
+
+REA 同时诚实标注局限：解析大 bundle 时 worker 堆内存受限、静态分析不证明运行时执行、图覆盖不完整（"unavailable facts remain explicit and must not be read as absence"）。
+
+### 演示小结
+
+- REA 对**应用级**目标（Electron/JS 目录）分析能力极强：IPC、preload、contextBridge、依赖全部重建
+- 对**单文件 webpack bundle** 也能拆：端点、存储、调用关系可提取，但大文件受资源限制
+- 证据链 + 显式未知项设计贯穿所有输出，是 Agent 工具设计的标杆
+
