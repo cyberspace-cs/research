@@ -436,3 +436,44 @@ Harness Engineering 就是设计和演化这个 runtime 的学科。
 | Skill2Env (NVIDIA) | https://github.com/NVlabs/Skill2Env |
 | AutoBenchmark (Meta) | https://facebookresearch.github.io/RAM/blogs/autobench/ |
 | DESIGNER | attention-is-all-i-need.github.io/Design-Logic-Reasoning |
+
+
+---
+
+## 📡 九、REA (Reverse Engineer Anything) — 逆向工程框架调研（2026-10-13）
+
+> GitHub 一周 12 万+ Star 的现象级项目，给 Coding Agent 装上逆向工程工具箱。
+> **完整深度调研文档见**：[docs/REA-Reverse-Engineer-Anything.md](docs/REA-Reverse-Engineer-Anything.md)
+
+| 项目 | 内容 |
+|------|------|
+| **仓库** | https://github.com/morluto/rea（16.8万+ ⭐，MIT） |
+| **npm** | `rea-agents` |
+| **定位** | MCP 服务器 + CLI：让 Agent 无源码逆向二进制/App/网页 |
+| **核心能力** | 41 个检查工具 + 14 个调查工作流，对接 Ghidra/Hopper/IDA/JADX |
+| **分析目标** | 原生二进制、Go、WASM、EVM、SQLite、JS/Electron、.NET、APK、固件、网站、抓包等 19+ 类 |
+
+#### 核心思想
+
+> 看到喜欢的功能，就搞懂它怎么工作——一直深入到二进制层面。
+
+REA 本身不是大模型，而是**工具链**：通过 MCP 接入 Claude Code / Codex / Cursor / Gemini CLI，让 Agent 自己调用专业逆向工具，**每个结论都带证据链（evidence_id + limitations）**。
+
+#### 工作原理
+
+```
+用户描述目标功能 → Agent 调 REA(MCP) → 反编译/拆包/追踪调用路径
+    → 返回代码+引用+未知项 → Agent 解释原理 → Agent 写出实现并测试
+```
+
+#### 对我们的启发
+
+1. **证据链设计**：每个分析结果都显式标注证据与未知项，可审计、可追溯——我们 DIY Agent Harness 应借鉴
+2. **Provider 抽象**：一个接口对接多个引擎（Ghidra/Hopper/IDA/JADX），换引擎不换上层逻辑
+3. **产品化技巧**：`npx rea-agents setup` 一行安装、自动备份配置、多 Agent 支持、20+ 语言 README
+4. **Agent 能力扩展**：继"写代码"后 Agent 现在能"读二进制"，工具生态是下一个竞争点
+
+#### 法律边界（REA 官方 DISCLAIMER）
+
+仅限合法分析：安全研究、CTF、教育、互操作、审计自己拥有/被授权检查的软件。**禁止**：绕过 DRM/授权/反作弊、开发外挂、绕过认证、复制专有软件代码与资产。
+
